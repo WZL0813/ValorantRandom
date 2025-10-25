@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无畏契约随机选择器</title>
+    <style>
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-family: 'Orbitron', sans-serif;
+            color: #64ffda;
+            font-size: 16px;
+            z-index: 9999;
+            text-shadow: 0 0 5px #64ffda;
+            opacity: 0.8;
+            letter-spacing: 2px;
+            pointer-events: none; /* 防止文字影响页面交互 */
+            animation: glow 2 ease-in-out infinite alternate;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #050916 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff4655, #7eccff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(255, 70, 85, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #a0a0a0;
+            margin-bottom: 30px;
+        }
+        
+        .combined-result {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #1a2135, #242e4a);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 0 auto 40px;
+            border: 3px solid #ff4655;
+            box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4);
+            position: relative;
+            overflow: hidden;
+            max-width: 800px;
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .combined-result.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .combined-result::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 70, 85, 0.2) 0%, transparent 70%);
+            z-index: -1;
+            animation: rotateBg 20s linear infinite;
+        }
+        
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .highlight {
+            color: #7eccff;
+            font-weight: bold;
+            font-size: 2.2rem;
+            text-shadow: 0 0 15px rgba(126, 204, 255, 0.7);
+        }
+        
+        .one-click-section {
+            margin-bottom: 40px;
+        }
+        
+        .one-click-btn {
+            background: linear-gradient(135deg, #ff4655, #c53a54);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(255, 70, 85, 0.6);
+            font-weight: bold;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        .one-click-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: rotate(45deg);
+            z-index: -1;
+            transition: all 0.5s;
+        }
+        
+        .one-click-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(255, 70, 85, 0.8);
+        }
+        
+        .one-click-btn:hover::before {
+            transform: rotate(45deg) translateX(100%);
+        }
+        
+        .one-click-btn:active {
+            transform: translateY(2px);
+        }
+        
+        .wheels-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+        
+        .wheel-section {
+            background: rgba(20, 25, 40, 0.8);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex: 1;
+            min-width: 400px;
+            max-width: 550px;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #ff4655;
+        }
+        
+        .wheel-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .wheel {
+            width: 320px;
+            height: 320px;
+            position: relative;
+            border-radius: 50%;
+            background: #1a1f2e;
+            box-shadow: 0 0 0 15px rgba(40, 45, 60, 0.8), 
+                        inset 0 0 30px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.2, 0.8, 0.3, 1);
+        }
+        
+        .wheel-item {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .wheel-item-content {
+            width: 110px;
+            padding: 10px;
+            background: rgba(30, 35, 50, 0.9);
+            border-radius: 8px;
+            font-size: 15px;
+            transform: rotate(90deg);
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .wheel-center {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            background: #ff4655;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 0 30px rgba(255, 70, 85, 0.7);
+            z-index: 10;
+            border: 5px solid white;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 45px;
+            background: #ff4655;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 5;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .spin-btn {
+            background: linear-gradient(135deg, #ff4655, #c53a54);
+            color: white;
+            border: none;
+            padding: 16px 45px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 7px 20px rgba(255, 70, 85, 0.5);
+            font-weight: bold;
+        }
+        
+        .spin-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 70, 85, 0.7);
+        }
+        
+        .result {
+            font-size: 1.6rem;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(25, 30, 45, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 6px solid #ff4655;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+        
+        .result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* 大弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a2135, #242e4a);
+            border-radius: 25px;
+            padding: 50px;
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            border: 5px solid #ff4655;
+            box-shadow: 0 0 50px rgba(255, 70, 85, 0.7);
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .modal-title {
+            font-size: 3rem;
+            color: #ff4655;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px rgba(255, 70, 85, 0.7);
+        }
+        
+        .combination-result {
+            font-size: 2.5rem;
+            margin: 30px 0;
+        }
+        
+        .close-btn {
+            background: #ff4655;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(255, 70, 85, 0.5);
+        }
+        
+        .close-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 70, 85, 0.8);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 50px;
+            gap: 25px;
+        }
+        
+        .info-card {
+            background: rgba(25, 30, 45, 0.8);
+            border-radius: 18px;
+            padding: 25px;
+            width: 320px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-card h3 {
+            color: #ff4655;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+        
+        .info-card ul {
+            text-align: left;
+            list-style-type: none;
+        }
+        
+        .info-card li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 900px) {
+            .wheels-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .wheel-section {
+                min-width: 90%;
+            }
+            
+            .modal-content {
+                padding: 30px;
+            }
+            
+            .modal-title {
+                font-size: 2.5rem;
+            }
+            
+            .combination-result {
+                font-size: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .wheel {
+                width: 280px;
+                height: 280px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .modal-title {
+                font-size: 2rem;
+            }
+            
+            .combination-result {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 大弹窗 -->
+    <div class="modal" id="combinationModal">
+        <div class="modal-content">
+            <h2 class="modal-title">今天你的随机组合是：</h2>
+            <div class="combination-result" id="modalCombination">
+                <span class="highlight">点击下方按钮开始随机选择</span>
+            </div>
+            <button class="close-btn" id="closeModal">关闭</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>无畏契约随机选择器</h1>
+            <p class="subtitle">随机选择无畏契约英雄角色与枪械！</p>
+        </header>
+        
+        <!-- 组合结果显示在两个转盘上方居中 -->
+        <div class="combined-result" id="combinedResult">
+            今天你的随机组合是：<span class="highlight">点击下方按钮开始随机选择</span>
+        </div>
+        
+        <!-- 一键抽取按钮 -->
+        <div class="one-click-section">
+            <button class="one-click-btn" id="oneClickSpin">一键抽取</button>
+        </div>
+        
+        <div class="wheels-container">
+            <!-- 左侧角色转盘 -->
+            <div class="wheel-section">
+                <h2 class="section-title">角色转盘</h2>
+                <div class="wheel-wrapper">
+                    <div class="pointer"></div>
+                    <div class="wheel" id="characterWheel">
+                        <div class="wheel-center">角色</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="spin-btn" id="spinCharacter">旋转角色转盘</button>
+                    <div class="result" id="characterResult">等待旋转...</div>
+                </div>
+            </div>
+            
+            <!-- 右侧枪械转盘 -->
+            <div class="wheel-section">
+                <h2 class="section-title">枪械转盘</h2>
+                <div class="wheel-wrapper">
+                    <div class="pointer"></div>
+                    <div class="wheel" id="weaponWheel">
+                        <div class="wheel-center">枪械</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="spin-btn" id="spinWeapon">旋转枪械转盘</button>
+                    <div class="result" id="weaponResult">等待旋转...</div>
+                </div>
+            </div>
+        </div>
+
+    <div class="watermark">Ryokuryuneko</div>
+
+    <script>
+        // 无畏契约角色列表（共28名）
+        const characters = [
+            "铁臂", "捷风", "雷兹", "幽影", "炼狱", "不死鸟", "贤者", 
+            "猎枭", "蝰蛇", "零", "芮娜", "奇乐", "斯凯", "夜露", 
+            "星礈", "K/O", "尚勃勒", "霓虹", "黑梦", "海神", 
+            "盖可", "钢锁", "壹决", "暮蝶", "维斯", "钛狐", "幻棱", "禁灭"
+        ];
+        
+        // 无畏契约枪械列表
+        const weapons = [
+            "标配", "短炮", "狂怒", "鬼魅", "正义",
+            "蜂刺", "骇灵", "雄鹿", "判官", "獠犬",
+            "戍卫", "狂徒", "幻影", "飞将", "莽侠",
+            "冥驹", "战神", "奥丁"
+        ];
+        
+        // 初始化转盘
+        function initializeWheel(wheelId, items) {
+            const wheel = document.getElementById(wheelId);
+            wheel.innerHTML = wheelId === 'characterWheel' ? '<div class="wheel-center">角色</div>' : '<div class="wheel-center">枪械</div>';
+            
+            const anglePerItem = 360 / items.length;
+            
+            items.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'wheel-item';
+                
+                // 计算项目位置
+                const angle = anglePerItem * index;
+                itemElement.style.transform = `rotate(${angle}deg)`;
+                
+                const content = document.createElement('div');
+                content.className = 'wheel-item-content';
+                content.textContent = item;
+                
+                // 交替背景色
+                if (index % 2 === 0) {
+                    content.style.background = 'rgba(40, 45, 60, 0.9)';
+                } else {
+                    content.style.background = 'rgba(50, 55, 70, 0.9)';
+                }
+                
+                itemElement.appendChild(content);
+                wheel.appendChild(itemElement);
+            });
+        }
+        
+        // 旋转转盘函数 - 修复旋转圈数问题
+        function spinWheel(wheelId, resultId, items, isCharacter) {
+            const wheel = document.getElementById(wheelId);
+            const resultElement = document.getElementById(resultId);
+            
+            // 禁用按钮防止重复点击
+            const spinButton = isCharacter ? 
+                document.getElementById('spinCharacter') : 
+                document.getElementById('spinWeapon');
+            spinButton.disabled = true;
+            
+            // 重置转盘位置
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            
+            // 确保重置完成
+            setTimeout(() => {
+                // 添加旋转动画效果
+                wheel.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.3, 1)';
+                
+                // 随机旋转角度（至少5圈加上随机角度）
+                const spins = 5 + Math.random() * 2; // 5-7圈
+                const randomIndex = Math.floor(Math.random() * items.length);
+                const anglePerItem = 360 / items.length;
+                const extraAngle = 360 - (anglePerItem * randomIndex); // 确保指针指向选中项
+                
+                const totalRotation = 360 * spins + extraAngle;
+                
+                // 应用旋转动画
+                wheel.style.transform = `rotate(${totalRotation}deg)`;
+                
+                // 显示结果
+                setTimeout(() => {
+                    resultElement.textContent = `选中: ${items[randomIndex]}`;
+                    resultElement.classList.add('show');
+                    spinButton.disabled = false;
+                    
+                    // 更新组合结果
+                    updateCombinedResult();
+                }, 4000); // 匹配CSS过渡时间
+            }, 10);
+        }
+        
+        // 更新组合结果
+        function updateCombinedResult() {
+            const characterResult = document.getElementById('characterResult').textContent;
+            const weaponResult = document.getElementById('weaponResult').textContent;
+            
+            if (characterResult !== '等待旋转...' && weaponResult !== '等待旋转...') {
+                const char = characterResult.replace('选中: ', '');
+                const weapon = weaponResult.replace('选中: ', '');
+                
+                // 更新组合结果区域
+                const combinedResult = document.getElementById('combinedResult');
+                combinedResult.innerHTML = 
+                    `今天你的随机组合是：<span class="highlight">${char}</span> 使用 <span class="highlight">${weapon}</span>`;
+                combinedResult.classList.add('show');
+                
+                // 更新弹窗内容
+                const modalCombination = document.getElementById('modalCombination');
+                modalCombination.innerHTML = 
+                    `<span class="highlight">${char}</span> 使用 <span class="highlight">${weapon}</span>`;
+                
+                // 显示弹窗
+                const modal = document.getElementById('combinationModal');
+                modal.classList.add('show');
+            }
+        }
+        
+        // 一键抽取函数
+        function oneClickSpin() {
+            // 禁用所有按钮
+            document.getElementById('oneClickSpin').disabled = true;
+            document.getElementById('spinCharacter').disabled = true;
+            document.getElementById('spinWeapon').disabled = true;
+            
+            // 启动两个转盘同时旋转
+            const characterSpin = spinWheel('characterWheel', 'characterResult', characters, true);
+            const weaponSpin = spinWheel('weaponWheel', 'weaponResult', weapons, false);
+            
+            // 等待两个转盘都完成
+            setTimeout(() => {
+                // 更新组合结果
+                updateCombinedResult();
+                
+                // 启用所有按钮
+                document.getElementById('oneClickSpin').disabled = false;
+                document.getElementById('spinCharacter').disabled = false;
+                document.getElementById('spinWeapon').disabled = false;
+            }, 4000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化转盘
+            initializeWheel('characterWheel', characters);
+            initializeWheel('weaponWheel', weapons);
+            
+            // 添加按钮事件监听器
+            document.getElementById('spinCharacter').addEventListener('click', () => {
+                spinWheel('characterWheel', 'characterResult', characters, true);
+            });
+            
+            document.getElementById('spinWeapon').addEventListener('click', () => {
+                spinWheel('weaponWheel', 'weaponResult', weapons, false);
+            });
+            
+            // 添加一键抽取按钮事件
+            document.getElementById('oneClickSpin').addEventListener('click', oneClickSpin);
+            
+            // 添加关闭弹窗按钮事件
+            document.getElementById('closeModal').addEventListener('click', () => {
+                document.getElementById('combinationModal').classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>
